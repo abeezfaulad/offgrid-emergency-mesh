@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>OffGrid Emergency Mesh</title>
+  <!-- PeerJS WebRTC Library -->
+  <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
   <style>
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f172a; color: #f8fafc; padding: 20px; margin: 0; }
     .card { background: #1e293b; padding: 18px; border-radius: 12px; margin-bottom: 16px; border: 1px solid #334155; }
@@ -21,56 +23,51 @@
 </head>
 <body>
 
-  <h2>⚡ OffGrid Wi-Fi Direct Mesh</h2>
+  <h2>⚡ OffGrid Wi-Fi WebRTC Mesh</h2>
 
-  <!-- Hardware Direct Link Card -->
+  <!-- Step 1: Initialize Wi-Fi Node -->
   <div class="card">
-    <h3>1. Hardware Direct Link</h3>
-    <div id="mesh-status" class="status status-off">WI-FI DIRECT SOCKET: INACTIVE</div>
-    <button onclick="initializeDirectLink()">INITIALIZE WI-FI DIRECT SOCKET</button>
+    <h3>1. Local Wi-Fi Radio Socket</h3>
+    <div id="mesh-status" class="status status-off">WI-FI RADIO: INACTIVE</div>
+    <button onclick="initializeWiFiSocket()">INITIALIZE WI-FI NODE</button>
   </div>
 
-  <!-- Device Identity Card -->
+  <!-- Step 2: 6-Character Node Identity -->
   <div class="card">
     <h3>2. Your Node Identification</h3>
     <div id="my-code" class="code-box">------</div>
   </div>
 
-  <!-- Pair Card -->
+  <!-- Step 3: Connect via 6-Letter Code -->
   <div class="card">
-    <h3>3. Connect to Nearby Node</h3>
-    <input type="text" id="target-code" maxlength="6" placeholder="Enter 6-Letter Target Code (e.g. A3F9Z2)">
-    <button onclick="connectToNode()">CONNECT TO NODE</button>
+    <h3>3. Connect to Target Node</h3>
+    <input type="text" id="target-code" maxlength="6" placeholder="Enter 6-Letter Code (e.g. A3F9Z2)">
+    <button onclick="connectToWiFiNode()">CONNECT OVER WI-FI</button>
   </div>
 
-  <!-- Broadcast Card -->
+  <!-- Step 4: Broadcast Message -->
   <div class="card">
     <h3>4. Broadcast Message</h3>
     <input type="text" id="msg-input" placeholder="Type emergency message...">
     <button onclick="broadcastMessage()">SEND WIRELESS PAYLOAD</button>
   </div>
 
-  <!-- Feed Card -->
+  <!-- Local Feed -->
   <div class="card">
     <h3>Local Bulletin Feed</h3>
     <div id="bulletin-feed" class="feed"></div>
   </div>
 
   <script>
-    let isInitialized = false;
-    let pairedTarget = null;
-    let socket = null;
-
-    // Generate unique 6-character alphanumeric Node ID
+    let peer = null;
+    let activeConnections = [];
+    
+    // Generate simple 6-character uppercase ID
     function generateNodeCode() {
-      let code = localStorage.getItem('offgrid_node_id');
-      if (!code) {
-        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-        code = '';
-        for (let i = 0; i < 6; i++) {
-          code += chars.charAt(Math.floor(Math.random() * chars.length));
-        }
-        localStorage.setItem('offgrid_node_id', code);
+      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+      let code = '';
+      for (let i = 0; i < 6; i++) {
+        code += chars.charAt(Math.floor(Math.random() * chars.length));
       }
       return code;
     }
@@ -78,100 +75,106 @@
     const myCode = generateNodeCode();
     document.getElementById('my-code').innerText = myCode;
 
-    window.onload = function() {
-      renderFeed();
-      // Listen for local tab/device storage events for local Wi-Fi sync
-      window.addEventListener('storage', handleStorageBroadcast);
-    };
-
-    function initializeDirectLink() {
+    function initializeWiFiSocket() {
       const statusDiv = document.getElementById('mesh-status');
-      statusDiv.innerText = "SEARCHING LOCAL WI-FI DIRECT INTERFACE...";
-      
-      setTimeout(() => {
-        isInitialized = true;
+      statusDiv.innerText = "INITIALIZING WI-FI WEBRTC SOCKET...";
+
+      // Initialize PeerJS with explicit 6-letter Node ID
+      peer = new Peer(myCode, {
+        debug: 1,
+        config: { iceServers: [] } // Strict local network ICE candidates
+      });
+
+      peer.on('open', (id) => {
         statusDiv.className = "status status-on";
-        statusDiv.innerText = "WI-FI DIRECT INTERFACE: ACTIVE (PORT 8080 READY)";
-        appendFeed("System", "Local Wi-Fi Direct socket listening. Ready to pair 6-letter node.");
-      }, 1000);
+        statusDiv.innerText = `WI-FI SOCKET ACTIVE (NODE: ${id})`;
+        appendFeed("System", `Node initialized. Listening for local Wi-Fi connections...`);
+      });
+
+      // Handle incoming Wi-Fi connections from other devices
+      peer.on('connection', (conn) => {
+        bindConnectionEvents(conn);
+      });
+
+      peer.on('error', (err) => {
+        console.error("WebRTC Wi-Fi Error:", err);
+        appendFeed("System", `Wi-Fi Connection Error: ${err.type}`);
+      });
     }
 
-    function connectToNode() {
-      if (!isInitialized) {
-        alert("Please click 'INITIALIZE WI-FI DIRECT SOCKET' first!");
+    function connectToWiFiNode() {
+      if (!peer) {
+        alert("Please click 'INITIALIZE WI-FI NODE' first!");
         return;
       }
 
-      const target = document.getElementById('target-code').value.trim().toUpperCase();
-      if (target.length !== 6) {
+      const targetId = document.getElementById('target-code').value.trim().toUpperCase();
+      if (targetId.length !== 6) {
         alert("Please enter a valid 6-character Node ID!");
         return;
       }
 
-      if (target === myCode) {
-        alert("You cannot pair with your own Node ID!");
+      if (targetId === myCode) {
+        alert("You cannot connect to your own Node ID!");
         return;
       }
 
-      pairedTarget = target;
-      appendFeed("System", `Handshake successful! Linked directly to Node [${target}] over local Wi-Fi socket.`);
-      document.getElementById('target-code').value = '';
+      appendFeed("System", `Connecting to Node [${targetId}] over Wi-Fi...`);
+      const conn = peer.connect(targetId);
+      bindConnectionEvents(conn);
+    }
+
+    function bindConnectionEvents(conn) {
+      conn.on('open', () => {
+        if (!activeConnections.some(c => c.peer === conn.peer)) {
+          activeConnections.push(conn);
+        }
+        appendFeed("System", `Direct P2P Wi-Fi link established with Node: ${conn.peer}`);
+        document.getElementById('target-code').value = '';
+      });
+
+      conn.on('data', (data) => {
+        if (data && data.text) {
+          appendFeed(`Node (${conn.peer})`, data.text);
+        }
+      });
+
+      conn.on('close', () => {
+        activeConnections = activeConnections.filter(c => c.peer !== conn.peer);
+        appendFeed("System", `Node [${conn.peer}] disconnected.`);
+      });
     }
 
     function broadcastMessage() {
       const input = document.getElementById('msg-input');
       const text = input.value.trim();
-
       if (!text) return;
 
       const payload = {
         sender: myCode,
         text: text,
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        timestamp: Date.now()
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       };
 
-      // Broadcast payload to local storage channel (cross-tab/device sync)
-      localStorage.setItem('offgrid_broadcast_payload', JSON.stringify(payload));
-      
-      // Save to local feed
-      saveAndAppend(payload);
+      // Broadcast payload over all connected Wi-Fi WebRTC sockets
+      let sentCount = 0;
+      activeConnections.forEach(conn => {
+        if (conn.open) {
+          conn.send(payload);
+          sentCount++;
+        }
+      });
+
+      appendFeed(`Me (${myCode})`, text);
       input.value = '';
     }
 
-    function handleStorageBroadcast(e) {
-      if (e.key === 'offgrid_broadcast_payload' && e.newValue) {
-        const payload = JSON.parse(e.newValue);
-        if (payload.sender !== myCode) {
-          saveAndAppend(payload);
-        }
-      }
-    }
-
-    function saveAndAppend(payload) {
-      let messages = JSON.parse(localStorage.getItem('offgrid_msgs') || '[]');
-      
-      // Avoid duplicate messages
-      if (!messages.some(m => m.timestamp === payload.timestamp && m.sender === payload.sender)) {
-        messages.push(payload);
-        localStorage.setItem('offgrid_msgs', JSON.stringify(messages));
-      }
-      
-      renderFeed();
-    }
-
-    function renderFeed() {
+    function appendFeed(sender, text) {
       const feed = document.getElementById('bulletin-feed');
-      const messages = JSON.parse(localStorage.getItem('offgrid_msgs') || '[]');
-      feed.innerHTML = '';
-
-      messages.forEach(m => {
-        const div = document.createElement('div');
-        div.className = 'msg';
-        div.innerHTML = `<strong style="color:#38bdf8;">[${m.time}] Node (${m.sender}):</strong> ${m.text}`;
-        feed.appendChild(div);
-      });
-
+      const entry = document.createElement('div');
+      entry.className = 'msg';
+      entry.innerHTML = `<strong style="color:#38bdf8;">[${new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}] ${sender}:</strong> ${text}`;
+      feed.appendChild(entry);
       feed.scrollTop = feed.scrollHeight;
     }
   </script>
