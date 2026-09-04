@@ -33,6 +33,17 @@ function generateRoomCode() {
   return code;
 }
 
+// Broadcast to all clients in a room, optionally excluding one
+function broadcastToRoom(room, data, exclude = null) {
+  if (rooms[room]) {
+    rooms[room].forEach(client => {
+      if (client !== exclude && client.readyState === 1) {
+        client.send(JSON.stringify(data));
+      }
+    });
+  }
+}
+
 wss.on('connection', (ws) => {
   let currentRoom = null;
 
@@ -44,7 +55,6 @@ wss.on('connection', (ws) => {
       if (type === 'create') {
         // Host creates a new room
         let roomCode = generateRoomCode();
-        // Avoid collisions (unlikely but safe)
         while (rooms[roomCode]) {
           roomCode = generateRoomCode();
         }
@@ -74,14 +84,14 @@ wss.on('connection', (ws) => {
       }
 
       else if (type === 'message') {
-        // Chat message
+        // Chat message - broadcast to everyone EXCEPT the sender
         if (currentRoom && rooms[currentRoom]) {
           broadcastToRoom(currentRoom, {
             type: 'message',
             sender: sender || 'Anonymous',
             text: text,
             timestamp: new Date().toLocaleTimeString()
-          });
+          }, ws);  // <--- exclude the sender
         }
       }
 
@@ -91,7 +101,6 @@ wss.on('connection', (ws) => {
   });
 
   ws.on('close', () => {
-    // Remove client from room
     if (currentRoom && rooms[currentRoom]) {
       rooms[currentRoom] = rooms[currentRoom].filter(client => client !== ws);
       if (rooms[currentRoom].length === 0) {
@@ -106,13 +115,3 @@ wss.on('connection', (ws) => {
     }
   });
 });
-
-function broadcastToRoom(room, data) {
-  if (rooms[room]) {
-    rooms[room].forEach(client => {
-      if (client.readyState === 1) {
-        client.send(JSON.stringify(data));
-      }
-    });
-  }
-}
