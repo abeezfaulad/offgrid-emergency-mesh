@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>offline-mesh</title>
+  <style>
+    body { font-family: system-ui, sans-serif; background: #121212; color: #fff; max-width: 650px; margin: 20px auto; padding: 20px; }
+    h1 { color: #00e676; margin-bottom: 5px; }
+    .card { background: #1e1e1e; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #333; }
+    input, button, textarea { width: 100%; padding: 10px; margin-top: 8px; border-radius: 4px; border: none; box-sizing: border-box; }
+    input, textarea { background: #2a2a2a; color: #fff; }
+    button { background: #00e676; color: #000; font-weight: bold; cursor: pointer; }
+    ul { list-style: none; padding: 0; }
+    li { background: #2a2a2a; padding: 10px; margin-bottom: 8px; border-radius: 4px; word-break: break-all; }
+    .time { font-size: 0.8em; color: #888; }
+  </style>
+</head>
+<body>
+
+  <h1>⚡ offline-mesh</h1>
+  <p>Offline Local-Mesh File Share & Bulletin Board</p>
+
+  <!-- Bulletin Board Section -->
+  <div class="card">
+    <h3>📢 Post Local Update</h3>
+    <textarea id="msgInput" rows="2" placeholder="Broadcast a message locally..."></textarea>
+    <button onclick="postMessage()">Broadcast Message</button>
+  </div>
+
+  <!-- Local File Share Section -->
+  <div class="card">
+    <h3>📁 Share Offline File</h3>
+    <input type="file" id="fileInput">
+    <button onclick="shareFile()">Share File to Mesh</button>
+  </div>
+
+  <!-- Shared Feed -->
+  <div class="card">
+    <h3>💬 Local Bulletin & Shared Files</h3>
+    <ul id="feed"></ul>
+  </div>
+
+  <script>
+    const channel = new BroadcastChannel('offline_mesh_channel');
+    const feed = document.getElementById('feed');
+
+    window.onload = () => {
+      const saved = JSON.parse(localStorage.getItem('offline_mesh_posts') || '[]');
+      saved.forEach(renderItem);
+    };
+
+    channel.onmessage = (event) => {
+      saveAndRender(event.data);
+    };
+
+    function postMessage() {
+      const text = document.getElementById('msgInput').value;
+      if (!text) return;
+      const item = { type: 'text', content: text, time: new Date().toLocaleTimeString() };
+      document.getElementById('msgInput').value = '';
+      
+      channel.postMessage(item);
+      saveAndRender(item);
+    }
+
+    function shareFile() {
+      const fileInput = document.getElementById('fileInput');
+      const file = fileInput.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const item = { 
+          type: 'file', 
+          name: file.name, 
+          data: e.target.result, 
+          time: new Date().toLocaleTimeString() 
+        };
+        channel.postMessage(item);
+        saveAndRender(item);
+        fileInput.value = '';
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function saveAndRender(item) {
+      const saved = JSON.parse(localStorage.getItem('offline_mesh_posts') || '[]');
+      saved.unshift(item);
+      localStorage.setItem('offline_mesh_posts', JSON.stringify(saved));
+      renderItem(item, true);
+    }
+
+    function renderItem(item, prepend = false) {
+      const li = document.createElement('li');
+      if (item.type === 'text') {
+        li.innerHTML = `<span class="time">[${item.time}]</span> <strong>Message:</strong> ${item.content}`;
+      } else {
+        li.innerHTML = `<span class="time">[${item.time}]</span> <strong>File:</strong> <a href="${item.data}" download="${item.name}" style="color:#00e676;">${item.name} (Click to Download)</a>`;
+      }
+      
+      if (prepend && feed.firstChild) {
+        feed.insertBefore(li, feed.firstChild);
+      } else {
+        feed.appendChild(li);
+      }
+    }
+  </script>
+</body>
+</html>
