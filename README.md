@@ -47,7 +47,7 @@ Walkie-talkies are short-range, expensive, and don't share text/data reliably.
 | :--- | :--- |
 | **Backend** | Node.js + Express |
 | **Realtime** | WebSocket (`ws` library) |
-| **Frontend** | HTML5, CSS3, Vanilla JS |
+| **Frontend** | HTML5, CSS3 (embedded in HTML), Vanilla JS |
 | **Admin Panel** | Separate Node.js server with HTTP endpoints |
 | **Protocol** | HTTP + WebSocket over TCP/IP (local Wi-Fi) |
 
