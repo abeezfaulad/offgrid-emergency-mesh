@@ -13,149 +13,365 @@
       padding: 20px;
       max-width: 600px;
       margin: 0 auto;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
     }
     .card {
       background: #1e293b;
-      padding: 18px;
+      padding: 20px;
       border-radius: 12px;
       margin-bottom: 16px;
       border: 1px solid #334155;
     }
-    h2, h3 { color: #38bdf8; margin-bottom: 8px; }
-    input, button {
-      width: 100%;
-      padding: 12px;
-      border-radius: 8px;
-      border: 1px solid #475569;
-      background: #0f172a;
-      color: #fff;
-      font-size: 16px;
-      margin-bottom: 10px;
-    }
-    button {
-      background: #0284c7;
-      border: none;
+    h2 { color: #38bdf8; margin-bottom: 12px; }
+    .big-code {
+      font-size: 48px;
       font-weight: bold;
-      cursor: pointer;
-      transition: 0.2s;
+      letter-spacing: 8px;
+      color: #4ade80;
+      text-align: center;
+      padding: 20px;
+      background: #020617;
+      border-radius: 12px;
+      font-family: monospace;
     }
-    button:hover { background: #0ea5e9; }
     .status {
       padding: 10px;
       border-radius: 6px;
       font-weight: bold;
       text-align: center;
       margin-bottom: 10px;
+      font-size: 14px;
     }
     .status-off { background: #991b1b; color: #fecaca; }
     .status-on { background: #15803d; color: #4ade80; }
+    .status-waiting { background: #92400e; color: #fde68a; }
+    input, button {
+      width: 100%;
+      padding: 14px;
+      border-radius: 8px;
+      border: none;
+      font-size: 16px;
+      margin-bottom: 10px;
+    }
+    input {
+      background: #0f172a;
+      color: #fff;
+      border: 1px solid #475569;
+      text-align: center;
+      font-size: 24px;
+      letter-spacing: 4px;
+      font-weight: bold;
+    }
+    input::placeholder {
+      font-size: 16px;
+      letter-spacing: 0;
+      font-weight: normal;
+      color: #64748b;
+    }
+    button {
+      background: #0284c7;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    button:hover { background: #0ea5e9; }
+    button.secondary { background: #475569; }
+    button.secondary:hover { background: #64748b; }
+    button.danger { background: #dc2626; }
+    button.danger:hover { background: #ef4444; }
+    .hidden { display: none !important; }
+    .flex { display: flex; gap: 10px; }
+    .flex button { flex: 1; }
     .feed {
       background: #020617;
       padding: 12px;
       border-radius: 8px;
-      height: 200px;
+      height: 250px;
       overflow-y: auto;
       border: 1px solid #1e293b;
+      margin-bottom: 10px;
     }
     .msg {
       padding: 6px 0;
       border-bottom: 1px solid #1e293b;
       font-size: 14px;
     }
-    .msg strong { color: #38bdf8; }
-    .msg.me strong { color: #4ade80; }
-    .code-box {
-      font-size: 24px;
-      font-weight: bold;
-      letter-spacing: 4px;
-      color: #4ade80;
-      text-align: center;
-      padding: 12px;
-      background: #020617;
-      border-radius: 8px;
+    .msg .sender { color: #38bdf8; font-weight: bold; }
+    .msg .sender.me { color: #4ade80; }
+    .msg .time { color: #64748b; font-size: 11px; margin-left: 8px; }
+    .msg.system { color: #fbbf24; font-style: italic; }
+    .msg.system .sender { color: #fbbf24; }
+    .input-row {
+      display: flex;
+      gap: 10px;
     }
+    .input-row input {
+      flex: 1;
+      text-align: left;
+      font-size: 16px;
+      letter-spacing: 0;
+      font-weight: normal;
+      margin-bottom: 0;
+    }
+    .input-row button {
+      width: auto;
+      padding: 14px 24px;
+      margin-bottom: 0;
+    }
+    .room-info {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .room-info span { color: #94a3b8; font-size: 14px; }
+    .copy-btn {
+      background: #334155;
+      color: #e2e8f0;
+      border: none;
+      padding: 6px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+    }
+    .copy-btn:hover { background: #475569; }
   </style>
 </head>
 <body>
 
-  <h2>⚡ OffGrid Emergency Mesh</h2>
-
-  <div class="card">
-    <h3>Network Status</h3>
-    <div id="status" class="status status-off">⏳ Connecting…</div>
+  <!-- ============================================ -->
+  <!-- SCREEN 1: LANDING (Create or Join) -->
+  <!-- ============================================ -->
+  <div id="landingScreen">
+    <div class="card" style="text-align: center; padding: 40px 20px;">
+      <h2>⚡ OffGrid Emergency Mesh</h2>
+      <p style="color: #94a3b8; margin-bottom: 24px;">Offline communication over local Wi-Fi</p>
+      <div class="flex">
+        <button onclick="createRoom()" style="background: #059669;">🆕 Create Room</button>
+        <button onclick="showJoinScreen()" class="secondary">🔗 Join Room</button>
+      </div>
+      <p style="color: #64748b; font-size: 13px; margin-top: 20px;">Works without internet • Just a hotspot</p>
+    </div>
   </div>
 
-  <div class="card">
-    <h3>Your Device ID</h3>
-    <div id="my-code" class="code-box">------</div>
+  <!-- ============================================ -->
+  <!-- SCREEN 2: JOIN (Enter Code) -->
+  <!-- ============================================ -->
+  <div id="joinScreen" class="hidden">
+    <div class="card">
+      <h2>🔗 Join a Room</h2>
+      <input type="text" id="joinCodeInput" placeholder="Enter 6-digit code" maxlength="6" style="text-transform:uppercase;">
+      <div class="flex">
+        <button onclick="joinRoom()">Join</button>
+        <button onclick="goBack()" class="secondary">Back</button>
+      </div>
+      <div id="joinError" style="color: #f87171; text-align: center; margin-top: 8px; font-size: 14px;"></div>
+    </div>
   </div>
 
-  <div class="card">
-    <h3>Send Emergency Message</h3>
-    <input type="text" id="msg-input" placeholder="Type your message…">
-    <button id="send-btn">📤 SEND</button>
-  </div>
-
-  <div class="card">
-    <h3>Live Bulletin Feed</h3>
-    <div id="bulletin-feed" class="feed"></div>
+  <!-- ============================================ -->
+  <!-- SCREEN 3: CHAT ROOM -->
+  <!-- ============================================ -->
+  <div id="chatScreen" class="hidden">
+    <div class="card">
+      <div class="room-info">
+        <span>📍 Room: <strong id="roomCodeDisplay" style="color:#4ade80;">------</strong></span>
+        <div>
+          <button class="copy-btn" onclick="copyRoomCode()">📋 Copy</button>
+          <button class="copy-btn danger" onclick="leaveRoom()" style="background:#dc2626; color:white;">✕ Leave</button>
+        </div>
+      </div>
+      <div id="status" class="status status-waiting">⏳ Waiting for others to join...</div>
+      <div id="chatFeed" class="feed"></div>
+      <div class="input-row">
+        <input type="text" id="chatInput" placeholder="Type your message..." onkeydown="if(event.key==='Enter') sendMessage()">
+        <button onclick="sendMessage()">📤 Send</button>
+      </div>
+    </div>
   </div>
 
   <script>
-    // Generate a random device ID
-    const myCode = Math.random().toString(36).substring(2, 8).toUpperCase();
-    document.getElementById('my-code').innerText = myCode;
+    let ws = null;
+    let myRoom = null;
+    let myName = null;
 
-    const statusDiv = document.getElementById('status');
-    const feed = document.getElementById('bulletin-feed');
-    const input = document.getElementById('msg-input');
-    const sendBtn = document.getElementById('send-btn');
-
-    // Connect to the server using the same host (IP) that served this page
-    const ws = new WebSocket(`ws://${window.location.host}`);
-
-    ws.onopen = () => {
-      statusDiv.className = 'status status-on';
-      statusDiv.innerText = '✅ Connected to local mesh node';
-    };
-
-    ws.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      // data = { sender, text } (see sendMessage)
-      appendMessage(data.sender, data.text);
-    };
-
-    ws.onclose = () => {
-      statusDiv.className = 'status status-off';
-      statusDiv.innerText = '❌ Disconnected from mesh';
-    };
-
-    function sendMessage(text) {
-      if (!text) return;
-      const payload = { sender: myCode, text: text };
-      ws.send(JSON.stringify(payload));
-      appendMessage(myCode, text, true); // show as "Me"
+    // Generate a random 4-character name
+    function generateName() {
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+      let name = '';
+      for (let i = 0; i < 4; i++) {
+        name += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      return name;
     }
 
-    function appendMessage(sender, text, isMe = false) {
+    // ----- UI Helpers -----
+    function showScreen(id) {
+      document.getElementById('landingScreen').classList.add('hidden');
+      document.getElementById('joinScreen').classList.add('hidden');
+      document.getElementById('chatScreen').classList.add('hidden');
+      document.getElementById(id).classList.remove('hidden');
+    }
+
+    function showJoinScreen() {
+      document.getElementById('joinError').innerText = '';
+      showScreen('joinScreen');
+    }
+
+    function goBack() {
+      showScreen('landingScreen');
+    }
+
+    function copyRoomCode() {
+      const code = document.getElementById('roomCodeDisplay').innerText;
+      navigator.clipboard.writeText(code).then(() => {
+        alert('Room code copied!');
+      }).catch(() => {
+        // Fallback
+        const input = document.createElement('input');
+        input.value = code;
+        document.body.appendChild(input);
+        input.select();
+        document.execCommand('copy');
+        document.body.removeChild(input);
+        alert('Room code copied!');
+      });
+    }
+
+    // ----- WebSocket Connection -----
+    function connectToServer() {
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      ws = new WebSocket(`${protocol}//${window.location.host}`);
+      
+      ws.onopen = () => {
+        console.log('✅ Connected to server');
+      };
+
+      ws.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        handleServerMessage(data);
+      };
+
+      ws.onclose = () => {
+        const status = document.getElementById('status');
+        if (status) {
+          status.className = 'status status-off';
+          status.innerText = '❌ Disconnected from server';
+        }
+        // Try to reconnect after 2 seconds
+        setTimeout(connectToServer, 2000);
+      };
+
+      ws.onerror = (err) => {
+        console.warn('WebSocket error:', err);
+      };
+    }
+
+    // ----- Handle incoming messages -----
+    function handleServerMessage(data) {
+      if (data.type === 'created') {
+        // Room created
+        myRoom = data.room;
+        document.getElementById('roomCodeDisplay').innerText = myRoom;
+        const status = document.getElementById('status');
+        status.className = 'status status-waiting';
+        status.innerText = '⏳ Waiting for others to join... (Share your code)';
+        showScreen('chatScreen');
+      }
+      else if (data.type === 'joined') {
+        myRoom = data.room;
+        document.getElementById('roomCodeDisplay').innerText = myRoom;
+        const status = document.getElementById('status');
+        status.className = 'status status-on';
+        status.innerText = '✅ Connected to room!';
+        showScreen('chatScreen');
+      }
+      else if (data.type === 'error') {
+        document.getElementById('joinError').innerText = data.text;
+      }
+      else if (data.type === 'system') {
+        appendMessage('🔄 System', data.text, true);
+      }
+      else if (data.type === 'message') {
+        const isMe = data.sender === myName;
+        appendMessage(data.sender, data.text, false, isMe);
+      }
+    }
+
+    // ----- Room Actions -----
+    function createRoom() {
+      myName = generateName();
+      connectToServer();
+      // Wait for connection, then send 'create'
+      const check = setInterval(() => {
+        if (ws && ws.readyState === 1) {
+          clearInterval(check);
+          ws.send(JSON.stringify({ type: 'create' }));
+        }
+      }, 100);
+    }
+
+    function joinRoom() {
+      const code = document.getElementById('joinCodeInput').value.trim().toUpperCase();
+      if (code.length !== 6) {
+        document.getElementById('joinError').innerText = 'Please enter a 6-digit code';
+        return;
+      }
+      myName = generateName();
+      connectToServer();
+      const check = setInterval(() => {
+        if (ws && ws.readyState === 1) {
+          clearInterval(check);
+          ws.send(JSON.stringify({ type: 'join', room: code, sender: myName }));
+        }
+      }, 100);
+    }
+
+    function sendMessage() {
+      const input = document.getElementById('chatInput');
+      const text = input.value.trim();
+      if (!text || !ws || ws.readyState !== 1) return;
+      
+      ws.send(JSON.stringify({
+        type: 'message',
+        sender: myName,
+        text: text
+      }));
+      
+      appendMessage(myName, text, false, true);
+      input.value = '';
+    }
+
+    function leaveRoom() {
+      if (ws) ws.close();
+      myRoom = null;
+      showScreen('landingScreen');
+      document.getElementById('chatFeed').innerHTML = '';
+    }
+
+    // ----- Render messages -----
+    function appendMessage(sender, text, isSystem = false, isMe = false) {
+      const feed = document.getElementById('chatFeed');
       const div = document.createElement('div');
-      div.className = 'msg' + (isMe ? ' me' : '');
-      div.innerHTML = `<strong>${isMe ? 'Me' : 'Node ' + sender}:</strong> ${text}`;
+      div.className = 'msg' + (isSystem ? ' system' : '');
+      
+      if (isSystem) {
+        div.innerHTML = `<span class="sender">${sender}</span> ${text}`;
+      } else {
+        const senderClass = isMe ? 'me' : '';
+        const time = new Date().toLocaleTimeString();
+        div.innerHTML = `<span class="sender ${senderClass}">${sender}</span><span class="time">${time}</span> ${text}`;
+      }
+      
       feed.appendChild(div);
       feed.scrollTop = feed.scrollHeight;
     }
 
-    // Send on button click or Enter key
-    sendBtn.addEventListener('click', () => {
-      const text = input.value.trim();
-      if (text) {
-        sendMessage(text);
-        input.value = '';
-      }
-    });
-    input.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') sendBtn.click();
-    });
+    // ----- Init -----
+    showScreen('landingScreen');
   </script>
 </body>
 </html>

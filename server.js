@@ -8,7 +8,6 @@ app.use(express.static(path.join(__dirname, '')));
 
 const server = app.listen(3000, '0.0.0.0', () => {
   console.log('🚀 OffGrid Mesh Node active on port 3000');
-  // Show local IP addresses for clients to connect
   const ifaces = os.networkInterfaces();
   Object.keys(ifaces).forEach(ifname => {
     ifaces[ifname].forEach(iface => {
@@ -21,20 +20,99 @@ const server = app.listen(3000, '0.0.0.0', () => {
 
 const wss = new WebSocketServer({ server });
 
+// Store rooms: { roomCode: [ws1, ws2, ...] }
+const rooms = {};
+
+// Generate a random 6-character room code
+function generateRoomCode() {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  let code = '';
+  for (let i = 0; i < 6; i++) {
+    code += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return code;
+}
+
 wss.on('connection', (ws) => {
-  console.log('📱 New device connected');
+  let currentRoom = null;
+
   ws.on('message', (message) => {
     try {
       const data = JSON.parse(message);
-      // Broadcast to all clients
-      wss.clients.forEach(client => {
-        if (client !== ws && client.readyState === 1) {
-          client.send(JSON.stringify(data));
+      const { type, room, sender, text } = data;
+
+      if (type === 'create') {
+        // Host creates a new room
+        let roomCode = generateRoomCode();
+        // Avoid collisions (unlikely but safe)
+        while (rooms[roomCode]) {
+          roomCode = generateRoomCode();
         }
-      });
+        rooms[roomCode] = [ws];
+        currentRoom = roomCode;
+        ws.send(JSON.stringify({ type: 'created', room: roomCode }));
+        console.log(`📢 Room ${roomCode} created`);
+      }
+
+      else if (type === 'join') {
+        // Guest joins an existing room
+        const roomCode = room;
+        if (rooms[roomCode]) {
+          rooms[roomCode].push(ws);
+          currentRoom = roomCode;
+          ws.send(JSON.stringify({ type: 'joined', room: roomCode }));
+          
+          // Notify everyone in the room that someone joined
+          broadcastToRoom(roomCode, {
+            type: 'system',
+            text: `🔹 Node ${sender || 'Guest'} joined the room`
+          });
+          console.log(`👤 Node joined room ${roomCode}`);
+        } else {
+          ws.send(JSON.stringify({ type: 'error', text: 'Room not found!' }));
+        }
+      }
+
+      else if (type === 'message') {
+        // Chat message
+        if (currentRoom && rooms[currentRoom]) {
+          broadcastToRoom(currentRoom, {
+            type: 'message',
+            sender: sender || 'Anonymous',
+            text: text,
+            timestamp: new Date().toLocaleTimeString()
+          });
+        }
+      }
+
     } catch (e) {
-      console.warn('Invalid message');
+      console.warn('Invalid message:', e);
     }
   });
-  ws.on('close', () => console.log('📱 Device disconnected'));
+
+  ws.on('close', () => {
+    // Remove client from room
+    if (currentRoom && rooms[currentRoom]) {
+      rooms[currentRoom] = rooms[currentRoom].filter(client => client !== ws);
+      if (rooms[currentRoom].length === 0) {
+        delete rooms[currentRoom];
+        console.log(`🗑️ Room ${currentRoom} closed (empty)`);
+      } else {
+        broadcastToRoom(currentRoom, {
+          type: 'system',
+          text: '🔸 A node left the room'
+        });
+      }
+    }
+  });
 });
+
+function broadcastToRoom(room, data) {
+  if (rooms[room]) {
+    rooms[room].forEach(client => {
+      if (client.readyState === 1) {
+        client.send(JSON.stringify(data));
+      }
+    });
+  }
+}
