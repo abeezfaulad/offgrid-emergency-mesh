@@ -11,11 +11,9 @@
       background: #0f172a;
       color: #f8fafc;
       padding: 20px;
-      max-width: 600px;
+      max-width: 700px;
       margin: 0 auto;
       min-height: 100vh;
-      display: flex;
-      flex-direction: column;
     }
     .card {
       background: #1e293b;
@@ -25,17 +23,6 @@
       border: 1px solid #334155;
     }
     h2 { color: #38bdf8; margin-bottom: 12px; }
-    .big-code {
-      font-size: 48px;
-      font-weight: bold;
-      letter-spacing: 8px;
-      color: #4ade80;
-      text-align: center;
-      padding: 20px;
-      background: #020617;
-      border-radius: 12px;
-      font-family: monospace;
-    }
     .status {
       padding: 10px;
       border-radius: 6px;
@@ -59,15 +46,9 @@
       background: #0f172a;
       color: #fff;
       border: 1px solid #475569;
-      text-align: center;
-      font-size: 24px;
-      letter-spacing: 4px;
-      font-weight: bold;
+      text-align: left;
     }
     input::placeholder {
-      font-size: 16px;
-      letter-spacing: 0;
-      font-weight: normal;
       color: #64748b;
     }
     button {
@@ -110,10 +91,6 @@
     }
     .input-row input {
       flex: 1;
-      text-align: left;
-      font-size: 16px;
-      letter-spacing: 0;
-      font-weight: normal;
       margin-bottom: 0;
     }
     .input-row button {
@@ -121,13 +98,15 @@
       padding: 14px 24px;
       margin-bottom: 0;
     }
-    .room-info {
+    .room-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
       margin-bottom: 12px;
     }
-    .room-info span { color: #94a3b8; font-size: 14px; }
+    .room-header span { color: #94a3b8; font-size: 14px; }
     .copy-btn {
       background: #334155;
       color: #e2e8f0;
@@ -138,6 +117,27 @@
       font-size: 13px;
     }
     .copy-btn:hover { background: #475569; }
+    .participants {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 12px;
+      padding: 8px;
+      background: #0f172a;
+      border-radius: 8px;
+      min-height: 36px;
+    }
+    .participant {
+      background: #1e293b;
+      padding: 4px 14px;
+      border-radius: 20px;
+      font-size: 13px;
+      border: 1px solid #334155;
+      color: #e2e8f0;
+    }
+    .participant.me { border-color: #4ade80; color: #4ade80; }
+    .participant.you { border-color: #38bdf8; color: #38bdf8; }
+    .label { color: #94a3b8; font-size: 13px; margin-right: 8px; }
   </style>
 </head>
 <body>
@@ -149,6 +149,9 @@
     <div class="card" style="text-align: center; padding: 40px 20px;">
       <h2>⚡ OffGrid Emergency Mesh</h2>
       <p style="color: #94a3b8; margin-bottom: 24px;">Offline communication over local Wi-Fi</p>
+      
+      <input type="text" id="nameInput" placeholder="Enter your name..." value="User" style="text-align:center; margin-bottom:20px;">
+      
       <div class="flex">
         <button onclick="createRoom()" style="background: #059669;">🆕 Create Room</button>
         <button onclick="showJoinScreen()" class="secondary">🔗 Join Room</button>
@@ -163,7 +166,7 @@
   <div id="joinScreen" class="hidden">
     <div class="card">
       <h2>🔗 Join a Room</h2>
-      <input type="text" id="joinCodeInput" placeholder="Enter 6-digit code" maxlength="6" style="text-transform:uppercase;">
+      <input type="text" id="joinCodeInput" placeholder="Enter 6-digit code" maxlength="6" style="text-transform:uppercase; text-align:center; font-size:24px; letter-spacing:4px;">
       <div class="flex">
         <button onclick="joinRoom()">Join</button>
         <button onclick="goBack()" class="secondary">Back</button>
@@ -177,14 +180,23 @@
   <!-- ============================================ -->
   <div id="chatScreen" class="hidden">
     <div class="card">
-      <div class="room-info">
+      <div class="room-header">
         <span>📍 Room: <strong id="roomCodeDisplay" style="color:#4ade80;">------</strong></span>
         <div>
           <button class="copy-btn" onclick="copyRoomCode()">📋 Copy</button>
-          <button class="copy-btn danger" onclick="leaveRoom()" style="background:#dc2626; color:white;">✕ Leave</button>
+          <button class="copy-btn" onclick="leaveRoom()" style="background:#dc2626; color:white;">✕ Leave</button>
         </div>
       </div>
+      
       <div id="status" class="status status-waiting">⏳ Waiting for others to join...</div>
+      
+      <div style="margin-top: 10px;">
+        <span class="label">👥 Participants:</span>
+        <div id="participantList" class="participants">
+          <span style="color:#64748b; font-size:13px;">Waiting for connection...</span>
+        </div>
+      </div>
+      
       <div id="chatFeed" class="feed"></div>
       <div class="input-row">
         <input type="text" id="chatInput" placeholder="Type your message..." onkeydown="if(event.key==='Enter') sendMessage()">
@@ -197,16 +209,7 @@
     let ws = null;
     let myRoom = null;
     let myName = null;
-
-    // Generate a random 4-character name
-    function generateName() {
-      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-      let name = '';
-      for (let i = 0; i < 4; i++) {
-        name += chars.charAt(Math.floor(Math.random() * chars.length));
-      }
-      return name;
-    }
+    let participants = [];
 
     // ----- UI Helpers -----
     function showScreen(id) {
@@ -241,6 +244,12 @@
       });
     }
 
+    function getMyName() {
+      let name = document.getElementById('nameInput').value.trim();
+      if (!name) name = 'User';
+      return name;
+    }
+
     // ----- WebSocket Connection -----
     function connectToServer() {
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -261,7 +270,6 @@
           status.className = 'status status-off';
           status.innerText = '❌ Disconnected from server';
         }
-        // Try to reconnect after 2 seconds
         setTimeout(connectToServer, 2000);
       };
 
@@ -273,7 +281,6 @@
     // ----- Handle incoming messages -----
     function handleServerMessage(data) {
       if (data.type === 'created') {
-        // Room created
         myRoom = data.room;
         document.getElementById('roomCodeDisplay').innerText = myRoom;
         const status = document.getElementById('status');
@@ -289,6 +296,11 @@
         status.innerText = '✅ Connected to room!';
         showScreen('chatScreen');
       }
+      else if (data.type === 'participants') {
+        // Update the participant list
+        participants = data.names || [];
+        renderParticipants();
+      }
       else if (data.type === 'error') {
         document.getElementById('joinError').innerText = data.text;
       }
@@ -301,15 +313,26 @@
       }
     }
 
+    function renderParticipants() {
+      const container = document.getElementById('participantList');
+      if (!participants || participants.length === 0) {
+        container.innerHTML = '<span style="color:#64748b; font-size:13px;">No one else here yet.</span>';
+        return;
+      }
+      container.innerHTML = participants.map(name => {
+        const isMe = name === myName;
+        return `<span class="participant ${isMe ? 'me' : ''}">${name} ${isMe ? '(You)' : ''}</span>`;
+      }).join('');
+    }
+
     // ----- Room Actions -----
     function createRoom() {
-      myName = generateName();
+      myName = getMyName();
       connectToServer();
-      // Wait for connection, then send 'create'
       const check = setInterval(() => {
         if (ws && ws.readyState === 1) {
           clearInterval(check);
-          ws.send(JSON.stringify({ type: 'create' }));
+          ws.send(JSON.stringify({ type: 'create', name: myName }));
         }
       }, 100);
     }
@@ -320,12 +343,12 @@
         document.getElementById('joinError').innerText = 'Please enter a 6-digit code';
         return;
       }
-      myName = generateName();
+      myName = getMyName();
       connectToServer();
       const check = setInterval(() => {
         if (ws && ws.readyState === 1) {
           clearInterval(check);
-          ws.send(JSON.stringify({ type: 'join', room: code, sender: myName }));
+          ws.send(JSON.stringify({ type: 'join', room: code, name: myName }));
         }
       }, 100);
     }
@@ -337,7 +360,6 @@
       
       ws.send(JSON.stringify({
         type: 'message',
-        sender: myName,
         text: text
       }));
       
@@ -348,8 +370,10 @@
     function leaveRoom() {
       if (ws) ws.close();
       myRoom = null;
+      participants = [];
       showScreen('landingScreen');
       document.getElementById('chatFeed').innerHTML = '';
+      document.getElementById('participantList').innerHTML = '';
     }
 
     // ----- Render messages -----

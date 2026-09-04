@@ -23,7 +23,6 @@ const wss = new WebSocketServer({ server });
 // Store rooms: { roomCode: [ws1, ws2, ...] }
 const rooms = {};
 
-// Generate a random 6-character room code
 function generateRoomCode() {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
   let code = '';
@@ -33,7 +32,7 @@ function generateRoomCode() {
   return code;
 }
 
-// Broadcast to all clients in a room, optionally excluding one
+// Broadcast to everyone EXCEPT a specific client
 function broadcastToRoom(room, data, exclude = null) {
   if (rooms[room]) {
     rooms[room].forEach(client => {
@@ -44,13 +43,28 @@ function broadcastToRoom(room, data, exclude = null) {
   }
 }
 
+// Send the list of participants to everyone in the room
+function sendParticipantList(room) {
+  if (!rooms[room]) return;
+  const names = rooms[room]
+    .filter(client => client.readyState === 1 && client.username)
+    .map(client => client.username);
+  
+  const data = { type: 'participants', names };
+  rooms[room].forEach(client => {
+    if (client.readyState === 1) {
+      client.send(JSON.stringify(data));
+    }
+  });
+}
+
 wss.on('connection', (ws) => {
   let currentRoom = null;
 
   ws.on('message', (message) => {
     try {
       const data = JSON.parse(message);
-      const { type, room, sender, text } = data;
+      const { type, room, name, text } = data;
 
       if (type === 'create') {
         // Host creates a new room
@@ -60,38 +74,48 @@ wss.on('connection', (ws) => {
         }
         rooms[roomCode] = [ws];
         currentRoom = roomCode;
+        ws.username = name || 'Anonymous';
+        ws.room = roomCode;
+        
         ws.send(JSON.stringify({ type: 'created', room: roomCode }));
-        console.log(`📢 Room ${roomCode} created`);
+        // Send participant list (just themselves)
+        sendParticipantList(roomCode);
+        console.log(`📢 Room ${roomCode} created by ${ws.username}`);
       }
 
       else if (type === 'join') {
-        // Guest joins an existing room
         const roomCode = room;
         if (rooms[roomCode]) {
           rooms[roomCode].push(ws);
           currentRoom = roomCode;
+          ws.username = name || 'Anonymous';
+          ws.room = roomCode;
+          
           ws.send(JSON.stringify({ type: 'joined', room: roomCode }));
           
-          // Notify everyone in the room that someone joined
+          // Notify everyone (including new user) about participant list
+          sendParticipantList(roomCode);
+          
+          // System message
           broadcastToRoom(roomCode, {
             type: 'system',
-            text: `🔹 Node ${sender || 'Guest'} joined the room`
-          });
-          console.log(`👤 Node joined room ${roomCode}`);
+            text: `🔹 ${ws.username} joined the room`
+          }, ws);
+          
+          console.log(`👤 ${ws.username} joined room ${roomCode}`);
         } else {
           ws.send(JSON.stringify({ type: 'error', text: 'Room not found!' }));
         }
       }
 
       else if (type === 'message') {
-        // Chat message - broadcast to everyone EXCEPT the sender
         if (currentRoom && rooms[currentRoom]) {
           broadcastToRoom(currentRoom, {
             type: 'message',
-            sender: sender || 'Anonymous',
+            sender: ws.username || 'Anonymous',
             text: text,
             timestamp: new Date().toLocaleTimeString()
-          }, ws);  // <--- exclude the sender
+          }, ws); // Exclude sender (they already see their own message locally)
         }
       }
 
@@ -102,14 +126,18 @@ wss.on('connection', (ws) => {
 
   ws.on('close', () => {
     if (currentRoom && rooms[currentRoom]) {
+      // Remove the client
       rooms[currentRoom] = rooms[currentRoom].filter(client => client !== ws);
+      
       if (rooms[currentRoom].length === 0) {
         delete rooms[currentRoom];
         console.log(`🗑️ Room ${currentRoom} closed (empty)`);
       } else {
+        // Update participant list for remaining clients
+        sendParticipantList(currentRoom);
         broadcastToRoom(currentRoom, {
           type: 'system',
-          text: '🔸 A node left the room'
+          text: `🔸 ${ws.username || 'A node'} left the room`
         });
       }
     }

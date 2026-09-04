@@ -1,10 +1,61 @@
-# OffGrid Emergency Mesh
+# ⚡ OffGrid Emergency Mesh
 
-A zero-internet emergency communication system.  
-Run a lightweight Node.js server on any laptop or Android (via Termux) that creates a local WebSocket hub.  
-Any device connected to the same Wi-Fi hotspot can open the web page and send/receive messages instantly – no internet required.
+**Zero-infrastructure emergency communication over local Wi-Fi.**
 
-## Setup
-1. Install [Node.js](https://nodejs.org/) (v14+).
-2. Clone or download these files into a folder.
-3. Open a terminal in that folder and run:
+[![Hackathon](https://img.shields.io/badge/Make--A--Ton-OffGrid-blue)](https://offgrid.makeaton.in)
+
+## 📌 The Problem We Solve
+
+In disaster scenarios – earthquakes, floods, storms, or remote rural areas – the first thing to fail is cellular infrastructure. Mobile towers are damaged, internet backhauls are cut, and power is out. 
+
+When that happens:
+- **No calls** 📵
+- **No SMS** ✉️
+- **No WhatsApp / Telegram / Signal** (they all require the cloud)
+- **No way to coordinate rescue**, share urgent updates, or ask for help.
+
+Walkie-talkies are short-range, expensive, and don't share text/data reliably.
+
+---
+
+## 💡 Our Solution
+
+**OffGrid Emergency Mesh** turns any Wi-Fi hotspot into a local, browser-based communication hub.
+
+- 🔥 **Works 100% offline** – no internet required.
+- 📱 **Zero app installation** – any smartphone browser works.
+- 🔗 **Instant pairing** – 6-digit room code joins participants instantly.
+- 👥 **Live participant list** – see exactly who is connected.
+- 🛠️ **Built-in admin panel** – start/stop the server and view logs.
+
+---
+
+## 🎯 How It Works
+
+1. **Host** enables a Wi-Fi hotspot on a laptop/Android (via Termux).
+2. **Host** runs the Node.js server (`node server.js`).
+3. **Users** connect their phones to the hotspot and open the host's IP in a browser.
+4. **Host** creates a room, gets a 6-digit code (e.g., `A3F9K2`).
+5. **Guests** enter the code and join the same room.
+6. **Everyone chats** – messages appear instantly on all connected devices.
+
+---
+
+## 🛠️ Tech Stack
+
+| Layer | Technology |
+| :--- | :--- |
+| **Backend** | Node.js + Express |
+| **Realtime** | WebSocket (`ws` library) |
+| **Frontend** | HTML5, CSS3, Vanilla JS |
+| **Admin Panel** | Separate Node.js server with HTTP endpoints |
+| **Protocol** | HTTP + WebSocket over TCP/IP (local Wi-Fi) |
+
+---
+
+## 🚀 Quick Start
+
+### 1. Clone the repository
+```bash
+git clone https://github.com/abeezfaulad/offline-mesh.git
+cd offline-mesh
