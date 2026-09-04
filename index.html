@@ -3,86 +3,263 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>offline-mesh</title>
+  <title>offline-mesh | Emergency Local Hub</title>
+  
+  <!-- Standalone QRCode.js Library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
   <style>
-    body { font-family: system-ui, sans-serif; background: #121212; color: #fff; max-width: 650px; margin: 20px auto; padding: 20px; }
-    h1 { color: #00e676; margin-bottom: 5px; }
-    .card { background: #1e1e1e; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #333; }
-    input, button, textarea { width: 100%; padding: 10px; margin-top: 8px; border-radius: 4px; border: none; box-sizing: border-box; }
-    input, textarea { background: #2a2a2a; color: #fff; }
-    button { background: #00e676; color: #000; font-weight: bold; cursor: pointer; }
-    ul { list-style: none; padding: 0; }
-    li { background: #2a2a2a; padding: 10px; margin-bottom: 8px; border-radius: 4px; word-break: break-all; }
-    .time { font-size: 0.8em; color: #888; }
+    :root {
+      --bg: #0f172a;
+      --card: #1e293b;
+      --accent: #10b981;
+      --text: #f8fafc;
+      --subtext: #94a3b8;
+      --border: #334155;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 5px;
+    }
+
+    h1 {
+      margin: 0;
+      color: var(--accent);
+      font-size: 1.8rem;
+    }
+
+    .badge {
+      background: var(--accent);
+      color: #0f172a;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: bold;
+    }
+
+    .subtitle {
+      color: var(--subtext);
+      font-size: 0.9rem;
+      margin-top: 0;
+      margin-bottom: 20px;
+    }
+
+    .card {
+      background: var(--card);
+      padding: 20px;
+      border-radius: 12px;
+      margin-bottom: 20px;
+      border: 1px solid var(--border);
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+    }
+
+    h3 {
+      margin-top: 0;
+      font-size: 1.1rem;
+      color: var(--text);
+    }
+
+    input, textarea, button {
+      width: 100%;
+      padding: 12px;
+      margin-top: 8px;
+      border-radius: 6px;
+      border: 1px solid #475569;
+      background: #0f172a;
+      color: #fff;
+      box-sizing: border-box;
+      font-size: 0.95rem;
+    }
+
+    textarea {
+      resize: vertical;
+    }
+
+    button {
+      background: var(--accent);
+      color: #0f172a;
+      font-weight: bold;
+      border: none;
+      cursor: pointer;
+      margin-top: 12px;
+      transition: background 0.2s;
+    }
+
+    button:hover {
+      opacity: 0.9;
+    }
+
+    ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    li {
+      background: #0f172a;
+      padding: 12px;
+      margin-bottom: 10px;
+      border-radius: 6px;
+      border-left: 4px solid var(--accent);
+      word-break: break-word;
+    }
+
+    .time {
+      font-size: 0.75rem;
+      color: var(--subtext);
+    }
+
+    .qrcode-box {
+      margin-top: 15px;
+      background: #fff;
+      padding: 15px;
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .qrcode-box p {
+      color: #000;
+      margin: 0 0 10px 0;
+      font-weight: bold;
+      font-size: 0.85rem;
+    }
   </style>
 </head>
 <body>
 
-  <h1>⚡ offline-mesh</h1>
-  <p>Offline Local-Mesh File Share & Bulletin Board</p>
+  <header>
+    <h1>⚡ offline-mesh</h1>
+    <span class="badge">OFFLINE READY</span>
+  </header>
+  <p class="subtitle">Zero-Internet Local Emergency Manual, Mesh Broadcast & QR Transfer</p>
 
-  <!-- Bulletin Board Section -->
+  <!-- Section 1: Pre-Loaded Survival Kit -->
   <div class="card">
-    <h3>📢 Post Local Update</h3>
-    <textarea id="msgInput" rows="2" placeholder="Broadcast a message locally..."></textarea>
-    <button onclick="postMessage()">Broadcast Message</button>
+    <h3>🚑 Offline First-Aid & Emergency Guides</h3>
+    <input type="text" id="searchBox" placeholder="Search guides (e.g. CPR, Bleeding, Water)..." onkeyup="filterGuides()">
+    <ul id="survivalList" style="margin-top: 12px;"></ul>
   </div>
 
-  <!-- Local File Share Section -->
+  <!-- Section 2: Post Broadcast & QR Code Generator -->
+  <div class="card">
+    <h3>📢 Broadcast Mesh Update & Generate QR</h3>
+    <textarea id="msgInput" rows="2" placeholder="Type emergency message (e.g. Shelter 4 has clean drinking water)..."></textarea>
+    <button onclick="postUpdate()">Broadcast Message & Create QR</button>
+    
+    <div id="qrContainer" class="qrcode-box" style="display: none;">
+      <p>Scan with Phone Camera (No App or Internet Required):</p>
+      <div id="qrcode"></div>
+    </div>
+  </div>
+
+  <!-- Section 3: File Sharing -->
   <div class="card">
     <h3>📁 Share Offline File</h3>
     <input type="file" id="fileInput">
     <button onclick="shareFile()">Share File to Mesh</button>
   </div>
 
-  <!-- Shared Feed -->
+  <!-- Section 4: Live Mesh Bulletin -->
   <div class="card">
-    <h3>💬 Local Bulletin & Shared Files</h3>
+    <h3>💬 Local Bulletin & Shared Assets</h3>
     <ul id="feed"></ul>
   </div>
 
   <script>
+    // Pre-loaded Emergency Survival Database
+    const survivalData = [
+      { title: "CPR Guidelines", text: "Push hard and fast in center of chest (100-120 bpm). Give 2 rescue breaths for every 30 compressions." },
+      { title: "Water Purification", text: "Boil water vigorously for 1 full minute. Alternatively, add 2 drops of unscented household bleach per liter and let sit for 30 mins." },
+      { title: "Severe Bleeding", text: "Apply direct firm pressure using clean cloth. Do not remove soaked cloths—add more layers directly on top." },
+      { title: "Heatstroke First Aid", text: "Move victim to shade. Cool rapidly using wet cloths or cold water pouring on neck, armpits, and groin." }
+    ];
+
     const channel = new BroadcastChannel('offline_mesh_channel');
     const feed = document.getElementById('feed');
+    let qrInstance = null;
 
     window.onload = () => {
-      const saved = JSON.parse(localStorage.getItem('offline_mesh_posts') || '[]');
-      saved.forEach(renderItem);
+      renderGuides(survivalData);
+      loadSavedPosts();
     };
 
-    channel.onmessage = (event) => {
-      saveAndRender(event.data);
-    };
-
-    function postMessage() {
-      const text = document.getElementById('msgInput').value;
-      if (!text) return;
-      const item = { type: 'text', content: text, time: new Date().toLocaleTimeString() };
-      document.getElementById('msgInput').value = '';
-      
-      channel.postMessage(item);
-      saveAndRender(item);
+    // Render Emergency Guides
+    function renderGuides(items) {
+      const list = document.getElementById('survivalList');
+      list.innerHTML = items.map(i => `<li><strong>${i.title}:</strong> ${i.text}</li>`).join('');
     }
 
+    function filterGuides() {
+      const query = document.getElementById('searchBox').value.toLowerCase();
+      const filtered = survivalData.filter(i => 
+        i.title.toLowerCase().includes(query) || i.text.toLowerCase().includes(query)
+      );
+      renderGuides(filtered);
+    }
+
+    // Broadcast Update + Generate QR
+    function postUpdate() {
+      const text = document.getElementById('msgInput').value;
+      if (!text) return;
+
+      const item = { type: 'text', content: text, time: new Date().toLocaleTimeString() };
+      document.getElementById('msgInput').value = '';
+
+      channel.postMessage(item);
+      saveAndRender(item);
+
+      // Generate QR Code
+      const container = document.getElementById('qrContainer');
+      const qrDiv = document.getElementById('qrcode');
+      qrDiv.innerHTML = '';
+      container.style.display = 'flex';
+
+      new QRCode(qrDiv, {
+        text: text,
+        width: 128,
+        height: 128
+      });
+    }
+
+    // File Sharing
     function shareFile() {
-      const fileInput = document.getElementById('fileInput');
-      const file = fileInput.files[0];
+      const input = document.getElementById('fileInput');
+      const file = input.files[0];
       if (!file) return;
 
       const reader = new FileReader();
       reader.onload = function(e) {
-        const item = { 
-          type: 'file', 
-          name: file.name, 
-          data: e.target.result, 
-          time: new Date().toLocaleTimeString() 
+        const item = {
+          type: 'file',
+          name: file.name,
+          data: e.target.result,
+          time: new Date().toLocaleTimeString()
         };
         channel.postMessage(item);
         saveAndRender(item);
-        fileInput.value = '';
+        input.value = '';
       };
       reader.readAsDataURL(file);
     }
+
+    // Receive live broadcasts from other local tabs
+    channel.onmessage = (event) => {
+      saveAndRender(event.data);
+    };
 
     function saveAndRender(item) {
       const saved = JSON.parse(localStorage.getItem('offline_mesh_posts') || '[]');
@@ -91,19 +268,40 @@
       renderItem(item, true);
     }
 
+    function loadSavedPosts() {
+      const saved = JSON.parse(localStorage.getItem('offline_mesh_posts') || '[]');
+      saved.forEach(item => renderItem(item, false));
+    }
+
     function renderItem(item, prepend = false) {
       const li = document.createElement('li');
       if (item.type === 'text') {
-        li.innerHTML = `<span class="time">[${item.time}]</span> <strong>Message:</strong> ${item.content}`;
+        li.innerHTML = `<span class="time">[${item.time}]</span><br><strong>Message:</strong> ${item.content}`;
       } else {
-        li.innerHTML = `<span class="time">[${item.time}]</span> <strong>File:</strong> <a href="${item.data}" download="${item.name}" style="color:#00e676;">${item.name} (Click to Download)</a>`;
+        li.innerHTML = `<span class="time">[${item.time}]</span><br><strong>File:</strong> <a href="${item.data}" download="${item.name}" style="color:var(--accent);">${item.name} (Click to Download)</a>`;
       }
-      
+
       if (prepend && feed.firstChild) {
         feed.insertBefore(li, feed.firstChild);
       } else {
         feed.appendChild(li);
       }
+    }
+
+    // Inline Service Worker Registration for PWA Offline Caching
+    if ('serviceWorker' in navigator) {
+      const swCode = `
+        const CACHE = 'offline-mesh-v1';
+        self.addEventListener('install', e => {
+          e.waitUntil(caches.open(CACHE).then(c => c.addAll(['./'])));
+        });
+        self.addEventListener('fetch', e => {
+          e.respondWith(caches.match(e.request).then(r => r || fetch(e.request)));
+        });
+      `;
+      const blob = new Blob([swCode], { type: 'application/javascript' });
+      navigator.serviceWorker.register(URL.createObjectURL(blob))
+        .catch(err => console.log('SW registration error:', err));
     }
   </script>
 </body>
