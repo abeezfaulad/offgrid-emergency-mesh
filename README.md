@@ -1,11 +1,11 @@
-⚡ OffGrid Emergency Mesh
+##⚡ OffGrid Emergency Mesh
 
 Zero‑internet, browser‑based emergency communication over local Wi‑Fi.
 
 https://img.shields.io/badge/Make--A--Ton-OffGrid-0ea5e9
 https://img.shields.io/badge/License-MIT-yellow.svg
 https://img.shields.io/badge/Node.js-18.x-339933
-📌 What Is This?
+##📌 What Is This?
 
 OffGrid Emergency Mesh turns any Wi‑Fi hotspot into a local communication hub.
 
@@ -20,7 +20,7 @@ OffGrid Emergency Mesh turns any Wi‑Fi hotspot into a local communication hub.
     🛠️ Built‑in admin panel – start/stop the server and view live logs.
 
 Built for the Make‑A‑Ton OffGrid Hackathon – designed for disasters, remote areas, and any situation where the internet is down.
-🧠 The Problem We Solve
+##🧠 The Problem We Solve
 
 In a disaster – earthquake, flood, hurricane, or rural area with no coverage:
 
@@ -33,7 +33,7 @@ In a disaster – earthquake, flood, hurricane, or rural area with no coverage:
     📻 Walkie‑talkies are short‑range and can't share text/data.
 
 Our solution fills the gap with a system that costs nothing and can be deployed by anyone with a phone and a power bank.
-💡 How It Works
+##💡 How It Works
 text
 
 ┌─────────────────────────────────────────────────────────────┐
@@ -73,7 +73,7 @@ The flow in 3 sentences:
 
     Everyone: chats instantly – no internet required.
 
-📡 Wi‑Fi Requirement
+##📡 Wi‑Fi Requirement
 
     Any Wi‑Fi hotspot (phone, laptop, travel router) works.
 
@@ -81,7 +81,7 @@ The flow in 3 sentences:
 
     Range: ~30–100m with phone hotspot; 200+ meters with a dedicated router.
 
-🚀 Quick Start (5 Minutes)
+##🚀 Quick Start (5 Minutes)
 Prerequisites
 
     Node.js (v14 or higher) installed on the host device.
@@ -89,14 +89,14 @@ Prerequisites
     A device that can create a Wi‑Fi hotspot (laptop, Android phone, or a travel router).
 
 Setup
-bash
+'''bash
 
 git clone https://github.com/abeezfaulad/offgrid-emergency-mesh.git
 cd offgrid-emergency-mesh
 npm install
 node server.js
 
-Connect Clients
+##Connect Clients
 
     Enable a Wi‑Fi hotspot on the host device.
 
@@ -108,8 +108,8 @@ Connect Clients
 
     Start messaging.
 
-🛠️ Admin Panel
-bash
+##🛠️ Admin Panel
+'''bash
 
 node admin.js
 
@@ -123,7 +123,7 @@ Open http://<host-ip>:3001/admin.html in your browser.
 
     📋 Live Logs – See everything the mesh server prints in real‑time.
 
-📚 Full Documentation
+##📚 Full Documentation
 File	Description
 INSTRUCTIONS.md	Complete step‑by‑step setup & usage guide.
 DEMO_WORKFLOW.md	Minute‑by‑minute live demo sequence.
@@ -131,14 +131,14 @@ CHAT_ROOM_FEATURES.md	Deep dive into chat mechanics and room logic.
 USE_CASES.md	Real‑world scenarios – disasters, remote areas, events.
 FUTURE_ENHANCEMENTS.md	Roadmap for scaling to a disaster‑ready mesh network.
 CONTRIBUTING.md	How to contribute to the project.
-🛠️ Tech Stack
+##🛠️ Tech Stack
 Layer	Technology
 Backend	Node.js + Express
 Realtime	WebSocket (ws library)
 Frontend	HTML5, CSS3 (embedded), Vanilla JavaScript
 Admin Panel	Separate HTTP server with endpoints
 Protocol	HTTP + WebSocket over TCP/IP (local Wi‑Fi)
-🔧 Troubleshooting
+##🔧 Troubleshooting
 Problem	Solution
 node: command not found	Install Node.js.
 Port 3000 already in use	Kill the old process: pkill node.
@@ -146,7 +146,7 @@ Other devices can't connect	Check they're on the same hotspot and use the exact 
 WebSocket connection fails	Allow port 3000 in your firewall.
 Duplicate messages	Update to the latest server.js.
 Blank page / white screen	Hard refresh: Ctrl+Shift+R.
-🚧 Future Roadmap
+##🚧 Future Roadmap
 
     Dedicated hardware – Raspberry Pi drop‑nodes with high‑gain antennas.
 
@@ -158,12 +158,14 @@ Blank page / white screen	Hard refresh: Ctrl+Shift+R.
 
     Message prioritisation – distress alerts (Red / Amber / Green).
 
-🤝 Contributing
+##🤝 Contributing
 
 Please read CONTRIBUTING.md for details.
-📄 License
+
+##📄 License
 
 MIT License. See LICENSE for more information.
-👤 Author
+
+##👤 Author
 
 Abeez Faulad – GitHub: @abeezfaulad
