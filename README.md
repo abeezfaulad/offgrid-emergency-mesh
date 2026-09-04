@@ -30,6 +30,13 @@ Walkie-talkies are short-range, expensive, and don't share text/data reliably.
 
 ---
 
+## 📡 What Kind of Wi-Fi Do I Need?
+
+- **Any Wi-Fi hotspot** (from a phone, laptop, or travel router) works.
+- **No internet connection** is required – the router just needs to assign IP addresses (DHCP) to connected devices.
+- **Range:** Typically 30–100 meters with a phone hotspot; 200+ meters with a dedicated outdoor router.
+---
+
 ## 🎯 How It Works
 
 1. **Host** enables a Wi-Fi hotspot on a laptop/Android (via Termux).
