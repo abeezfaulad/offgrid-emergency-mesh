@@ -4,81 +4,75 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>OffGrid Emergency Mesh</title>
-  <!-- PeerJS WebRTC Library -->
-  <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
   <style>
-    * { box-sizing: border-box; }
-    body { 
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
-      background: #0f172a; 
-      color: #f8fafc; 
-      padding: 20px; 
-      margin: 0; 
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, sans-serif;
+      background: #0f172a;
+      color: #f8fafc;
+      padding: 20px;
       max-width: 600px;
-      margin-left: auto;
-      margin-right: auto;
+      margin: 0 auto;
     }
-    .card { 
-      background: #1e293b; 
-      padding: 18px; 
-      border-radius: 12px; 
-      margin-bottom: 16px; 
-      border: 1px solid #334155; 
+    .card {
+      background: #1e293b;
+      padding: 18px;
+      border-radius: 12px;
+      margin-bottom: 16px;
+      border: 1px solid #334155;
     }
-    h2, h3 { margin-top: 0; color: #38bdf8; }
-    input { 
-      width: 100%; 
-      padding: 12px; 
-      border-radius: 8px; 
-      border: 1px solid #475569; 
-      background: #0f172a; 
-      color: #fff; 
-      margin-bottom: 10px; 
-      font-size: 14px; 
+    h2, h3 { color: #38bdf8; margin-bottom: 8px; }
+    input, button {
+      width: 100%;
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid #475569;
+      background: #0f172a;
+      color: #fff;
+      font-size: 16px;
+      margin-bottom: 10px;
     }
-    button { 
-      width: 100%; 
-      background: #0284c7; 
-      color: white; 
-      border: none; 
-      padding: 12px; 
-      border-radius: 8px; 
-      font-weight: bold; 
-      cursor: pointer; 
-      margin-bottom: 8px; 
-      font-size: 14px; 
+    button {
+      background: #0284c7;
+      border: none;
+      font-weight: bold;
+      cursor: pointer;
+      transition: 0.2s;
     }
-    button:active { background: #0369a1; }
-    .status { 
-      padding: 10px; 
-      border-radius: 6px; 
-      font-size: 13px; 
-      font-weight: bold; 
-      text-align: center; 
-      margin-bottom: 10px; 
+    button:hover { background: #0ea5e9; }
+    .status {
+      padding: 10px;
+      border-radius: 6px;
+      font-weight: bold;
+      text-align: center;
+      margin-bottom: 10px;
     }
     .status-off { background: #991b1b; color: #fecaca; }
     .status-on { background: #15803d; color: #4ade80; }
-    .feed { 
-      background: #020617; 
-      padding: 12px; 
-      border-radius: 8px; 
-      min-height: 140px; 
-      max-height: 250px; 
-      overflow-y: auto; 
-      border: 1px solid #1e293b; 
+    .feed {
+      background: #020617;
+      padding: 12px;
+      border-radius: 8px;
+      height: 200px;
+      overflow-y: auto;
+      border: 1px solid #1e293b;
     }
-    .msg { padding: 8px 0; border-bottom: 1px solid #1e293b; font-size: 14px; }
-    .code-box { 
-      font-size: 28px; 
-      font-weight: bold; 
-      letter-spacing: 4px; 
-      color: #4ade80; 
-      text-align: center; 
-      padding: 12px; 
-      background: #020617; 
-      border-radius: 8px; 
-      border: 1px dashed #334155;
+    .msg {
+      padding: 6px 0;
+      border-bottom: 1px solid #1e293b;
+      font-size: 14px;
+    }
+    .msg strong { color: #38bdf8; }
+    .msg.me strong { color: #4ade80; }
+    .code-box {
+      font-size: 24px;
+      font-weight: bold;
+      letter-spacing: 4px;
+      color: #4ade80;
+      text-align: center;
+      padding: 12px;
+      background: #020617;
+      border-radius: 8px;
     }
   </style>
 </head>
@@ -86,186 +80,82 @@
 
   <h2>⚡ OffGrid Emergency Mesh</h2>
 
-  <!-- Status Card -->
   <div class="card">
-    <h3>1. Mesh Signaling Status</h3>
-    <div id="status" class="status status-off">INITIALIZING SIGNALING SOCKET...</div>
+    <h3>Network Status</h3>
+    <div id="status" class="status status-off">⏳ Connecting…</div>
   </div>
 
-  <!-- Device Node Identity -->
   <div class="card">
-    <h3>2. Your Node Identification</h3>
+    <h3>Your Device ID</h3>
     <div id="my-code" class="code-box">------</div>
   </div>
 
-  <!-- Target Node Pairing -->
   <div class="card">
-    <h3>3. Connect to Remote Node</h3>
-    <input type="text" id="target-code" maxlength="6" placeholder="Enter 6-Letter Target Code (e.g. A3F9Z2)">
-    <button onclick="connectToNode()">ESTABLISH P2P CHANNEL</button>
+    <h3>Send Emergency Message</h3>
+    <input type="text" id="msg-input" placeholder="Type your message…">
+    <button id="send-btn">📤 SEND</button>
   </div>
 
-  <!-- Emergency Message Broadcast -->
   <div class="card">
-    <h3>4. Broadcast Emergency Payload</h3>
-    <input type="text" id="msg-input" placeholder="Type emergency message...">
-    <button onclick="sendMessage()">SEND WIRELESS PAYLOAD</button>
-  </div>
-
-  <!-- Bulletin Feed -->
-  <div class="card">
-    <h3>Local Bulletin Feed</h3>
+    <h3>Live Bulletin Feed</h3>
     <div id="bulletin-feed" class="feed"></div>
   </div>
 
   <script>
-    let peer = null;
-    let activeConn = null;
-
-    // Generate persistent 6-character Node ID
-    function generateNodeCode() {
-      let code = localStorage.getItem('offgrid_github_node_id');
-      if (!code) {
-        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-        code = '';
-        for (let i = 0; i < 6; i++) {
-          code += chars.charAt(Math.floor(Math.random() * chars.length));
-        }
-        localStorage.setItem('offgrid_github_node_id', code);
-      }
-      return code;
-    }
-
-    const myCode = generateNodeCode();
+    // Generate a random device ID
+    const myCode = Math.random().toString(36).substring(2, 8).toUpperCase();
     document.getElementById('my-code').innerText = myCode;
 
-    // Initialize WebRTC signaling on page load
-    window.onload = function() {
-      initPeer();
+    const statusDiv = document.getElementById('status');
+    const feed = document.getElementById('bulletin-feed');
+    const input = document.getElementById('msg-input');
+    const sendBtn = document.getElementById('send-btn');
+
+    // Connect to the server using the same host (IP) that served this page
+    const ws = new WebSocket(`ws://${window.location.host}`);
+
+    ws.onopen = () => {
+      statusDiv.className = 'status status-on';
+      statusDiv.innerText = '✅ Connected to local mesh node';
     };
 
-    function initPeer() {
-      // Connect to public PeerJS network broker with 6-char ID
-      peer = new Peer(myCode, {
-        debug: 1,
-        config: {
-          iceServers: [
-            { urls: 'stun:stun.l.google.com:19302' },
-            { urls: 'stun:stun1.l.google.com:19302' }
-          ]
-        }
-      });
+    ws.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      // data = { sender, text } (see sendMessage)
+      appendMessage(data.sender, data.text);
+    };
 
-      peer.on('open', (id) => {
-        const statusDiv = document.getElementById('status');
-        statusDiv.className = 'status status-on';
-        statusDiv.innerText = `READY FOR PAIRING (NODE ID: ${id})`;
-        appendFeed('System', 'Node initialized. Ready to form P2P mesh link.');
-      });
+    ws.onclose = () => {
+      statusDiv.className = 'status status-off';
+      statusDiv.innerText = '❌ Disconnected from mesh';
+    };
 
-      // Handle incoming connection requests
-      peer.on('connection', (conn) => {
-        activeConn = conn;
-        setupConnectionEvents(conn);
-      });
-
-      peer.on('error', (err) => {
-        console.error('PeerJS Error:', err);
-        appendFeed('System', `Connection error: ${err.type}`);
-      });
-    }
-
-    function connectToNode() {
-      const targetInput = document.getElementById('target-code');
-      const targetCode = targetInput.value.trim().toUpperCase();
-
-      if (targetCode.length !== 6) {
-        alert('Please enter a valid 6-character Node ID!');
-        return;
-      }
-
-      if (targetCode === myCode) {
-        alert('You cannot pair with your own Node ID!');
-        return;
-      }
-
-      appendFeed('System', `Initiating WebRTC handshake with Node [${targetCode}]...`);
-      activeConn = peer.connect(targetCode);
-      setupConnectionEvents(activeConn);
-    }
-
-    function setupConnectionEvents(conn) {
-      conn.on('open', () => {
-        const statusDiv = document.getElementById('status');
-        statusDiv.className = 'status status-on';
-        statusDiv.innerText = `P2P LINK ACTIVE ➔ NODE [${conn.peer}]`;
-        appendFeed('System', `Direct WebRTC P2P DataChannel established with Node [${conn.peer}]!`);
-        document.getElementById('target-code').value = '';
-      });
-
-      conn.on('data', (data) => {
-        if (data && data.text) {
-          appendFeed(`Node (${data.sender})`, data.text);
-        }
-      });
-
-      conn.on('close', () => {
-        const statusDiv = document.getElementById('status');
-        statusDiv.className = 'status status-off';
-        statusDiv.innerText = 'DISCONNECTED FROM PEER';
-        appendFeed('System', `Node [${conn.peer}] left the channel.`);
-        activeConn = null;
-      });
-    }
-
-    function sendMessage() {
-      const input = document.getElementById('msg-input');
-      const text = input.value.trim();
-
+    function sendMessage(text) {
       if (!text) return;
-
-      if (!activeConn || !activeConn.open) {
-        alert('Please connect to a target node before sending messages!');
-        return;
-      }
-
-      const payload = {
-        sender: myCode,
-        text: text,
-        timestamp: Date.now()
-      };
-
-      activeConn.send(payload);
-      appendFeed(`Me (${myCode})`, text);
-      input.value = '';
+      const payload = { sender: myCode, text: text };
+      ws.send(JSON.stringify(payload));
+      appendMessage(myCode, text, true); // show as "Me"
     }
 
-    function appendFeed(sender, text) {
-      const feed = document.getElementById('bulletin-feed');
+    function appendMessage(sender, text, isMe = false) {
       const div = document.createElement('div');
-      div.className = 'msg';
-      const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      
-      const color = sender.startsWith('Me') ? '#4ade80' : (sender === 'System' ? '#fbbf24' : '#38bdf8');
-      div.innerHTML = `<strong style="color: ${color};">[${timeStr}] ${sender}:</strong> ${text}`;
-      
+      div.className = 'msg' + (isMe ? ' me' : '');
+      div.innerHTML = `<strong>${isMe ? 'Me' : 'Node ' + sender}:</strong> ${text}`;
       feed.appendChild(div);
       feed.scrollTop = feed.scrollHeight;
     }
-  </script>
-  <script>
-  // Register Service Worker for Offline PWA Capabilities
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('./sw.js')
-        .then((reg) => {
-          console.log('OffGrid Service Worker registered successfully:', reg.scope);
-        })
-        .catch((err) => {
-          console.error('Service Worker registration failed:', err);
-        });
+
+    // Send on button click or Enter key
+    sendBtn.addEventListener('click', () => {
+      const text = input.value.trim();
+      if (text) {
+        sendMessage(text);
+        input.value = '';
+      }
     });
-  }
-</script>
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') sendBtn.click();
+    });
+  </script>
 </body>
 </html>

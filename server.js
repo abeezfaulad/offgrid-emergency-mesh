@@ -1,43 +1,40 @@
 const express = require('express');
 const { WebSocketServer } = require('ws');
-const cors = require('cors');
+const path = require('path');
+const os = require('os');
 
 const app = express();
-app.use(cors());
-app.use(express.static('.'));
+app.use(express.static(path.join(__dirname, '')));
 
 const server = app.listen(3000, '0.0.0.0', () => {
-  console.log('🚀 Local OffGrid Mesh Server running at http://0.0.0.0:3000');
+  console.log('🚀 OffGrid Mesh Node active on port 3000');
+  // Show local IP addresses for clients to connect
+  const ifaces = os.networkInterfaces();
+  Object.keys(ifaces).forEach(ifname => {
+    ifaces[ifname].forEach(iface => {
+      if (iface.family === 'IPv4' && !iface.internal) {
+        console.log(`   → Connect on http://${iface.address}:3000`);
+      }
+    });
+  });
 });
 
 const wss = new WebSocketServer({ server });
-const clients = new Map();
 
 wss.on('connection', (ws) => {
-  let userCode = null;
-
+  console.log('📱 New device connected');
   ws.on('message', (message) => {
     try {
       const data = JSON.parse(message);
-
-      if (data.type === 'REGISTER') {
-        userCode = data.code;
-        clients.set(userCode, ws);
-        console.log(`Node registered: ${userCode}`);
-      } else if (data.type === 'BROADCAST') {
-        // Broadcast message to all connected local nodes
-        wss.clients.forEach((client) => {
-          if (client.readyState === 1) {
-            client.send(JSON.stringify(data));
-          }
-        });
-      }
+      // Broadcast to all clients
+      wss.clients.forEach(client => {
+        if (client !== ws && client.readyState === 1) {
+          client.send(JSON.stringify(data));
+        }
+      });
     } catch (e) {
-      console.error('Invalid payload:', e);
+      console.warn('Invalid message');
     }
   });
-
-  ws.on('close', () => {
-    if (userCode) clients.delete(userCode);
-  });
+  ws.on('close', () => console.log('📱 Device disconnected'));
 });
