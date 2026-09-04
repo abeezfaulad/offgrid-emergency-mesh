@@ -1,6 +1,6 @@
 {
   "name": "offline-mesh",
-  "short_name": "OffGrid Mesh",
+  "short_name": "Offline Mesh",
   "description": "Offline Local-Mesh Emergency Hub & Data Transfer",
   "start_url": "./index.html",
   "display": "standalone",

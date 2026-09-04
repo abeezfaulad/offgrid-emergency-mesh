@@ -4,17 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>OffGrid Emergency Mesh</title>
-  <!-- PeerJS WebRTC Library -->
-  <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
   <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f172a; color: #f8fafc; padding: 20px; margin: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #0f172a; color: #f8fafc; padding: 20px; margin: 0; }
     .card { background: #1e293b; padding: 18px; border-radius: 12px; margin-bottom: 16px; border: 1px solid #334155; }
     h2, h3 { margin-top: 0; color: #38bdf8; }
     input { width: calc(100% - 24px); padding: 12px; border-radius: 8px; border: 1px solid #475569; background: #0f172a; color: #fff; margin-bottom: 10px; font-size: 14px; }
     button { width: 100%; background: #0284c7; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; margin-bottom: 8px; font-size: 14px; }
-    button:active { background: #0369a1; }
     .status { padding: 8px; border-radius: 6px; font-size: 13px; font-weight: bold; text-align: center; margin-bottom: 10px; }
-    .status-off { background: #475569; color: #cbd5e1; }
+    .status-off { background: #dc2626; color: #fecaca; }
     .status-on { background: #15803d; color: #4ade80; }
     .feed { background: #020617; padding: 12px; border-radius: 8px; min-height: 120px; max-height: 200px; overflow-y: auto; border: 1px solid #1e293b; }
     .msg { padding: 8px 0; border-bottom: 1px solid #1e293b; font-size: 14px; }
@@ -23,46 +20,30 @@
 </head>
 <body>
 
-  <h2>⚡ OffGrid Wi-Fi WebRTC Mesh</h2>
+  <h2>⚡ OffGrid Emergency Mesh</h2>
 
-  <!-- Step 1: Initialize Wi-Fi Node -->
   <div class="card">
-    <h3>1. Local Wi-Fi Radio Socket</h3>
-    <div id="mesh-status" class="status status-off">WI-FI RADIO: INACTIVE</div>
-    <button onclick="initializeWiFiSocket()">INITIALIZE WI-FI NODE</button>
+    <h3>Network Status</h3>
+    <div id="status" class="status status-off">OFFLINE - CONNECTING TO LOCAL SERVER...</div>
   </div>
 
-  <!-- Step 2: 6-Character Node Identity -->
   <div class="card">
-    <h3>2. Your Node Identification</h3>
+    <h3>Your Device Code</h3>
     <div id="my-code" class="code-box">------</div>
   </div>
 
-  <!-- Step 3: Connect via 6-Letter Code -->
   <div class="card">
-    <h3>3. Connect to Target Node</h3>
-    <input type="text" id="target-code" maxlength="6" placeholder="Enter 6-Letter Code (e.g. A3F9Z2)">
-    <button onclick="connectToWiFiNode()">CONNECT OVER WI-FI</button>
-  </div>
-
-  <!-- Step 4: Broadcast Message -->
-  <div class="card">
-    <h3>4. Broadcast Message</h3>
+    <h3>Broadcast Emergency Message</h3>
     <input type="text" id="msg-input" placeholder="Type emergency message...">
-    <button onclick="broadcastMessage()">SEND WIRELESS PAYLOAD</button>
+    <button onclick="sendMessage()">SEND LOCAL BROADCAST</button>
   </div>
 
-  <!-- Local Feed -->
   <div class="card">
     <h3>Local Bulletin Feed</h3>
     <div id="bulletin-feed" class="feed"></div>
   </div>
 
   <script>
-    let peer = null;
-    let activeConnections = [];
-    
-    // Generate simple 6-character uppercase ID
     function generateNodeCode() {
       const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
       let code = '';
@@ -75,106 +56,53 @@
     const myCode = generateNodeCode();
     document.getElementById('my-code').innerText = myCode;
 
-    function initializeWiFiSocket() {
-      const statusDiv = document.getElementById('mesh-status');
-      statusDiv.innerText = "INITIALIZING WI-FI WEBRTC SOCKET...";
+    // Connect to local laptop IP WebSocket automatically
+    const host = window.location.hostname || 'localhost';
+    const ws = new WebSocket(`ws://${host}:3000`);
 
-      // Initialize PeerJS with explicit 6-letter Node ID
-      peer = new Peer(myCode, {
-        debug: 1,
-        config: { iceServers: [] } // Strict local network ICE candidates
-      });
+    ws.onopen = () => {
+      const statusDiv = document.getElementById('status');
+      statusDiv.className = 'status status-on';
+      statusDiv.innerText = 'CONNECTED TO LOCAL OFFLINE MESH NETWORK';
+      
+      ws.send(JSON.stringify({ type: 'REGISTER', code: myCode }));
+    };
 
-      peer.on('open', (id) => {
-        statusDiv.className = "status status-on";
-        statusDiv.innerText = `WI-FI SOCKET ACTIVE (NODE: ${id})`;
-        appendFeed("System", `Node initialized. Listening for local Wi-Fi connections...`);
-      });
-
-      // Handle incoming Wi-Fi connections from other devices
-      peer.on('connection', (conn) => {
-        bindConnectionEvents(conn);
-      });
-
-      peer.on('error', (err) => {
-        console.error("WebRTC Wi-Fi Error:", err);
-        appendFeed("System", `Wi-Fi Connection Error: ${err.type}`);
-      });
-    }
-
-    function connectToWiFiNode() {
-      if (!peer) {
-        alert("Please click 'INITIALIZE WI-FI NODE' first!");
-        return;
+    ws.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      if (data.type === 'BROADCAST') {
+        appendFeed(data.sender, data.text);
       }
+    };
 
-      const targetId = document.getElementById('target-code').value.trim().toUpperCase();
-      if (targetId.length !== 6) {
-        alert("Please enter a valid 6-character Node ID!");
-        return;
-      }
+    ws.onclose = () => {
+      const statusDiv = document.getElementById('status');
+      statusDiv.className = 'status status-off';
+      statusDiv.innerText = 'DISCONNECTED FROM LOCAL NETWORK';
+    };
 
-      if (targetId === myCode) {
-        alert("You cannot connect to your own Node ID!");
-        return;
-      }
-
-      appendFeed("System", `Connecting to Node [${targetId}] over Wi-Fi...`);
-      const conn = peer.connect(targetId);
-      bindConnectionEvents(conn);
-    }
-
-    function bindConnectionEvents(conn) {
-      conn.on('open', () => {
-        if (!activeConnections.some(c => c.peer === conn.peer)) {
-          activeConnections.push(conn);
-        }
-        appendFeed("System", `Direct P2P Wi-Fi link established with Node: ${conn.peer}`);
-        document.getElementById('target-code').value = '';
-      });
-
-      conn.on('data', (data) => {
-        if (data && data.text) {
-          appendFeed(`Node (${conn.peer})`, data.text);
-        }
-      });
-
-      conn.on('close', () => {
-        activeConnections = activeConnections.filter(c => c.peer !== conn.peer);
-        appendFeed("System", `Node [${conn.peer}] disconnected.`);
-      });
-    }
-
-    function broadcastMessage() {
+    function sendMessage() {
       const input = document.getElementById('msg-input');
       const text = input.value.trim();
       if (!text) return;
 
       const payload = {
+        type: 'BROADCAST',
         sender: myCode,
-        text: text,
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        text: text
       };
 
-      // Broadcast payload over all connected Wi-Fi WebRTC sockets
-      let sentCount = 0;
-      activeConnections.forEach(conn => {
-        if (conn.open) {
-          conn.send(payload);
-          sentCount++;
-        }
-      });
-
-      appendFeed(`Me (${myCode})`, text);
+      ws.send(JSON.stringify(payload));
       input.value = '';
     }
 
     function appendFeed(sender, text) {
       const feed = document.getElementById('bulletin-feed');
-      const entry = document.createElement('div');
-      entry.className = 'msg';
-      entry.innerHTML = `<strong style="color:#38bdf8;">[${new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}] ${sender}:</strong> ${text}`;
-      feed.appendChild(entry);
+      const div = document.createElement('div');
+      div.className = 'msg';
+      const isMe = sender === myCode;
+      div.innerHTML = `<strong style="color:${isMe ? '#4ade80' : '#38bdf8'};">[${new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}] Node (${sender}):</strong> ${text}`;
+      feed.appendChild(div);
       feed.scrollTop = feed.scrollHeight;
     }
   </script>
