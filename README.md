@@ -147,19 +147,50 @@ Duplicate messages	Update to the latest server.js.
 Blank page / white screen	Hard refresh: Ctrl+Shift+R.
 
 ---
-## 🚧 Future Roadmap
+## 🚀 Future Roadmap
 
-    Dedicated hardware – Raspberry Pi drop‑nodes with high‑gain antennas.
+### Phase 1: Hardware Deployment
+- Replace laptop with Raspberry Pi 4 / Zero 2 W
+- Add GL.iNet travel router (200m+ range, 50+ clients)
+- Solar + battery power (24‑48 hours runtime)
+- IP67 rugged enclosure for weatherproofing
 
-    True mesh routing – BATMAN‑adv or OLSR for self‑healing networks.
+### Phase 2: True Mesh Networking
+- Implement BATMAN‑adv / OLSR routing protocols
+- Multi‑node self‑healing mesh
+- No single point of failure
 
-    LoRa integration – kilometre‑range backhaul.
+### Phase 3: Long-Range Backhaul
+- Integrate LoRa radios (2‑10 km node links)
+- Wi‑Fi + LoRa bridging for village/campus coverage
 
-    Offline maps + GPS – see everyone's location.
+### Phase 4: Offline Maps & GPS
+- Pre‑cached OpenStreetMap tiles
+- GPS location sharing between responders
+- Real‑time position visibility on map
 
-    Message prioritisation – distress alerts (Red / Amber / Green).
+### Phase 5: Message Prioritisation
+- Red (Distress) – pinned, highlighted in red
+- Amber (Urgent) – highlighted in yellow
+- Green (Normal) – standard chat
+
+### Phase 6: Persistent Storage
+- SQLite database for message history
+- New clients get last 50 messages
+- Useful for shift handover
+
+### Phase 7: Cross-Platform & Mobile
+- Standalone executable (pkg / nexe)
+- Native Android app (Kotlin)
+- One‑click installer for non‑technical users
+
+### Phase 8: Advanced Features
+- File sharing (images, small files)
+- Voice messages
+- End‑to‑end encryption
+- AI‑powered real‑time translation
+- 
 ---
-
 ### 🤝 Contributing
 
 Please read CONTRIBUTING.md for details.
