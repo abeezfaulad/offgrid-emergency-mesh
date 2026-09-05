@@ -163,14 +163,15 @@ Blank page / white screen	Hard refresh: Ctrl+Shift+R.
 ### 🤝 Contributing
 
 Please read CONTRIBUTING.md for details.
----
 
+---
 ### 📄 License
 
 MIT License. See LICENSE for more information.
----
 
+---
 ### 👤 Author
 
 Abeez Faulad – GitHub: @abeezfaulad
+
 ---
