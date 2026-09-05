@@ -20,7 +20,7 @@ const server = app.listen(3000, '0.0.0.0', () => {
 
 const wss = new WebSocketServer({ server });
 
-// Store rooms: { roomCode: [ws1, ws2, ...] }
+// Rooms store: { roomCode: { clients: [ws1, ws2, ...], createdAt: timestamp } }
 const rooms = {};
 
 function generateRoomCode() {
@@ -34,8 +34,8 @@ function generateRoomCode() {
 
 // Broadcast to everyone EXCEPT a specific client
 function broadcastToRoom(room, data, exclude = null) {
-  if (rooms[room]) {
-    rooms[room].forEach(client => {
+  if (rooms[room] && rooms[room].clients) {
+    rooms[room].clients.forEach(client => {
       if (client !== exclude && client.readyState === 1) {
         client.send(JSON.stringify(data));
       }
@@ -43,20 +43,43 @@ function broadcastToRoom(room, data, exclude = null) {
   }
 }
 
-// Send the list of participants to everyone in the room
+// Send participant list to everyone in the room
 function sendParticipantList(room) {
   if (!rooms[room]) return;
-  const names = rooms[room]
+  const names = rooms[room].clients
     .filter(client => client.readyState === 1 && client.username)
     .map(client => client.username);
-  
   const data = { type: 'participants', names };
-  rooms[room].forEach(client => {
+  rooms[room].clients.forEach(client => {
     if (client.readyState === 1) {
       client.send(JSON.stringify(data));
     }
   });
 }
+
+// API endpoint to get active rooms (for discovery)
+app.get('/rooms', (req, res) => {
+  const roomList = Object.keys(rooms).map(code => ({
+    code,
+    participants: rooms[code].clients.filter(c => c.readyState === 1).length,
+    created: rooms[code].createdAt
+  }));
+  res.json(roomList);
+});
+
+// API endpoint to get server IP address
+app.get('/server-ip', (req, res) => {
+  const ifaces = os.networkInterfaces();
+  let ip = 'unknown';
+  Object.keys(ifaces).forEach(name => {
+    ifaces[name].forEach(iface => {
+      if (iface.family === 'IPv4' && !iface.internal) {
+        ip = iface.address;
+      }
+    });
+  });
+  res.json({ ip });
+});
 
 wss.on('connection', (ws) => {
   let currentRoom = null;
@@ -67,18 +90,19 @@ wss.on('connection', (ws) => {
       const { type, room, name, text } = data;
 
       if (type === 'create') {
-        // Host creates a new room
         let roomCode = generateRoomCode();
         while (rooms[roomCode]) {
           roomCode = generateRoomCode();
         }
-        rooms[roomCode] = [ws];
+        rooms[roomCode] = {
+          clients: [ws],
+          createdAt: Date.now()
+        };
         currentRoom = roomCode;
         ws.username = name || 'Anonymous';
         ws.room = roomCode;
-        
+
         ws.send(JSON.stringify({ type: 'created', room: roomCode }));
-        // Send participant list (just themselves)
         sendParticipantList(roomCode);
         console.log(`📢 Room ${roomCode} created by ${ws.username}`);
       }
@@ -86,22 +110,17 @@ wss.on('connection', (ws) => {
       else if (type === 'join') {
         const roomCode = room;
         if (rooms[roomCode]) {
-          rooms[roomCode].push(ws);
+          rooms[roomCode].clients.push(ws);
           currentRoom = roomCode;
           ws.username = name || 'Anonymous';
           ws.room = roomCode;
-          
+
           ws.send(JSON.stringify({ type: 'joined', room: roomCode }));
-          
-          // Notify everyone (including new user) about participant list
           sendParticipantList(roomCode);
-          
-          // System message
           broadcastToRoom(roomCode, {
             type: 'system',
             text: `🔹 ${ws.username} joined the room`
           }, ws);
-          
           console.log(`👤 ${ws.username} joined room ${roomCode}`);
         } else {
           ws.send(JSON.stringify({ type: 'error', text: 'Room not found!' }));
@@ -114,8 +133,9 @@ wss.on('connection', (ws) => {
             type: 'message',
             sender: ws.username || 'Anonymous',
             text: text,
-            timestamp: new Date().toLocaleTimeString()
-          }, ws); // Exclude sender (they already see their own message locally)
+            timestamp: new Date().toLocaleTimeString(),
+            isSOS: data.isSOS || false
+          }, ws);
         }
       }
 
@@ -126,14 +146,11 @@ wss.on('connection', (ws) => {
 
   ws.on('close', () => {
     if (currentRoom && rooms[currentRoom]) {
-      // Remove the client
-      rooms[currentRoom] = rooms[currentRoom].filter(client => client !== ws);
-      
-      if (rooms[currentRoom].length === 0) {
+      rooms[currentRoom].clients = rooms[currentRoom].clients.filter(client => client !== ws);
+      if (rooms[currentRoom].clients.length === 0) {
         delete rooms[currentRoom];
         console.log(`🗑️ Room ${currentRoom} closed (empty)`);
       } else {
-        // Update participant list for remaining clients
         sendParticipantList(currentRoom);
         broadcastToRoom(currentRoom, {
           type: 'system',
