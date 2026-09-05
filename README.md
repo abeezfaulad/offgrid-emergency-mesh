@@ -189,7 +189,7 @@ Blank page / white screen	Hard refresh: Ctrl+Shift+R.
 - Voice messages
 - End‑to‑end encryption
 - AI‑powered real‑time translation
-- 
+  
 ---
 ### 🤝 Contributing
 
