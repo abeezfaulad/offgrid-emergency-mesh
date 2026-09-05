@@ -45,7 +45,7 @@ When disasters strike – earthquakes, floods, storms – cellular towers fail. 
 
 ## How It Works (Concept)
 
-[Host Device]
+Host Device]
 │
 │ Creates a Wi-Fi hotspot
 │ Runs Node.js server (port 3000)
